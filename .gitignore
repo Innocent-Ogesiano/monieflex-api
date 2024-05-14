@@ -35,3 +35,4 @@ build/
 /mvnw.cmd
 /.mvn/
 /src/main/resources/application-dev.properties
+.env
