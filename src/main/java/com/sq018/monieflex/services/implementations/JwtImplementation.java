@@ -46,8 +46,7 @@ public class JwtImplementation implements JwtService {
         Instant issuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         Instant expiration = issuedAt.plus(expiryDate == null ? 86400000 : expiryDate, ChronoUnit.MILLIS);
 
-        return Jwts
-                .builder()
+        return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(emailAddress)
                 .signWith(signingKey())

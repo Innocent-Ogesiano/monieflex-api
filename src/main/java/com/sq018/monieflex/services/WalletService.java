@@ -38,6 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.sq018.monieflex.utils.CreditCardUtil.verify;
+import static com.sq018.monieflex.utils.UserUtil.getLoginUser;
+
 @Service
 @RequiredArgsConstructor
 public class WalletService {
@@ -66,7 +69,7 @@ public class WalletService {
     }
 
     public ApiResponse<String> transferToBank(TransferDto transfer) {
-        String loginUserEmail = UserUtil.getLoginUser();
+        String loginUserEmail = getLoginUser();
         User user = userRepository.findByEmailAddress(loginUserEmail).orElseThrow();
         if(userUtil.isBalanceSufficient(BigDecimal.valueOf(transfer.amount()))) {
             Transaction transaction = new Transaction();
@@ -98,8 +101,8 @@ public class WalletService {
         }
     }
 
-    public ApiResponse<?> localTransfer(LocalTransferRequest localTransferRequest){
-        String loginUserEmail = UserUtil.getLoginUser();
+    public ApiResponse<String> localTransfer(LocalTransferRequest localTransferRequest){
+        String loginUserEmail = getLoginUser();
         User user = userRepository.findByEmailAddress(loginUserEmail).orElseThrow(
                 () -> new MonieFlexException("User not found")
         );
@@ -144,7 +147,7 @@ public class WalletService {
     public ApiResponse<LocalAccountQueryResponse> queryLocalAccount(LocalAccountQueryRequest localAccountQueryRequest){
         var wallet = walletRepository.findByNumber(localAccountQueryRequest.getAccount())
                 .orElseThrow(() -> new MonieFlexException("Invalid Account"));
-        var userWallet = walletRepository.findByUser_EmailAddressIgnoreCase(UserUtil.getLoginUser())
+        var userWallet = walletRepository.findByUser_EmailAddressIgnoreCase(getLoginUser())
                 .orElseThrow(() -> new MonieFlexException("User not found"));
 
         if(localAccountQueryRequest.getAccount().equals(userWallet.getNumber())) {
@@ -158,12 +161,12 @@ public class WalletService {
     }
 
     public ApiResponse<TransactionHistoryResponse> queryHistory(Integer page, Integer size) {
-        var user = walletRepository.findByUser_EmailAddressIgnoreCase(UserUtil.getLoginUser())
+        var user = walletRepository.findByUser_EmailAddressIgnoreCase(getLoginUser())
                 .orElseThrow(() -> new MonieFlexException("User not found"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt")));
         var transactions = transactionRepository.findByUser_EmailAddressOrAccount(
-                UserUtil.getLoginUser(), user.getNumber(), pageable
+                getLoginUser(), user.getNumber(), pageable
         );
         List<TransactionHistory> history = new ArrayList<>();
         transactions.forEach(transaction -> history.add(prepareTransactionHistory(transaction)));
@@ -224,7 +227,7 @@ public class WalletService {
     }
 
     private TransactionHistory prepareTransactionHistory(Transaction transaction) {
-        String loginUserEmail = UserUtil.getLoginUser();
+        String loginUserEmail = getLoginUser();
         Wallet user = walletRepository.findByUser_EmailAddressIgnoreCase(loginUserEmail)
                 .orElseThrow(() -> new MonieFlexException("User not found"));
 
@@ -240,7 +243,7 @@ public class WalletService {
     }
 
     public ApiResponse<List<TransactionHistory>> queryHistory(Integer page, Integer size, TransactionType type) {
-        String email = UserUtil.getLoginUser();
+        String email = getLoginUser();
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt")));
         var transactions = transactionRepository.findByTransactionTypeAndUser_EmailAddress(type, email, pageable);
         List<TransactionHistory> history = new ArrayList<>();
@@ -249,7 +252,7 @@ public class WalletService {
     }
 
     public ApiResponse<WalletPayload> queryWalletDetails() {
-        String email = UserUtil.getLoginUser();
+        String email = getLoginUser();
         var wallet = walletRepository.findByUser_EmailAddressIgnoreCase(email).orElseThrow(
                 () -> new MonieFlexException("Invalid user id")
         );
@@ -262,7 +265,7 @@ public class WalletService {
     }
 
     public ApiResponse<String> createTransactionPin(String pin) {
-        String email = UserUtil.getLoginUser();
+        String email = getLoginUser();
         var user = userRepository.findByEmailAddress(email).orElseThrow(
                 () -> new MonieFlexException("User not found")
         );
@@ -281,7 +284,7 @@ public class WalletService {
     }
 
     public ApiResponse<String> verifyPin(String pin) {
-        String email = UserUtil.getLoginUser();
+        String email = getLoginUser();
         var user = userRepository.findByEmailAddress(email).orElseThrow(
                 () -> new MonieFlexException("User not found")
         );
@@ -297,9 +300,9 @@ public class WalletService {
     }
 
     public ApiResponse<TransactionDataResponse> getTransactionChart() {
-        Wallet wallet = walletRepository.findByUser_EmailAddressIgnoreCase(UserUtil.getLoginUser())
+        Wallet wallet = walletRepository.findByUser_EmailAddressIgnoreCase(getLoginUser())
                 .orElseThrow(() -> new MonieFlexException("Wallet not found"));
-        var transactions = transactionRepository.queryByUser_EmailAddressOrAccount(UserUtil.getLoginUser(), wallet.getNumber());
+        var transactions = transactionRepository.queryByUser_EmailAddressOrAccount(getLoginUser(), wallet.getNumber());
         var months = TimeUtils.getMonths();
 
         List<Transaction> month1 = new ArrayList<>();
@@ -365,7 +368,7 @@ public class WalletService {
     }
 
     private TransactionData prepareChart(List<Transaction> transactions, String month) {
-        Wallet user = walletRepository.findByUser_EmailAddressIgnoreCase(UserUtil.getLoginUser())
+        Wallet user = walletRepository.findByUser_EmailAddressIgnoreCase(getLoginUser())
                 .orElseThrow(() -> new MonieFlexException("User not found"));
 
         List<BigDecimal> incomeList = new ArrayList<>();
@@ -407,13 +410,13 @@ public class WalletService {
     }
 
     public ApiResponse<String> fundWallet(FundWalletDto fundWalletDto) {
-        var card = CreditCardUtil.verify(() -> fundWalletDto).orElseThrow();
+        var card = verify(() -> fundWalletDto).orElseThrow();
 
         if (card.getAmount().compareTo(MINIMUM_FUND_AMOUNT) < 0) {
             throw new MonieFlexException("Amount to fund must be at least " + MINIMUM_FUND_AMOUNT);
         }
 
-        String email = UserUtil.getLoginUser();
+        String email = getLoginUser();
         var user = userRepository.findByEmailAddress(email).orElseThrow(
                 () -> new MonieFlexException("User not found")
         );
@@ -460,7 +463,7 @@ public class WalletService {
 
     public ApiResponse<String> verifyFundWallet(String OTP) {
          var result = verifyFundWalletRepository
-                 .findByIsUsedAndUser_EmailAddress(false, UserUtil.getLoginUser());
+                 .findByIsUsedAndUser_EmailAddress(false, getLoginUser());
          if(result.isEmpty()) {
              throw new MonieFlexException("Request cannot be completed");
          } else {

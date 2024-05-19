@@ -26,14 +26,14 @@ public class UserUtil {
     }
 
     public boolean isBalanceSufficient(BigDecimal amount) {
-        var loggedInUser = UserUtil.getLoginUser();
+        var loggedInUser = getLoginUser();
         var wallet = walletRepository.findByUser_EmailAddressIgnoreCase(loggedInUser);
         return wallet.isPresent() &&
                 wallet.get().getBalance().compareTo(amount) > 0;
     }
 
     public void updateWalletBalance(BigDecimal amount, boolean isDebit) {
-        var loggedInUser = UserUtil.getLoginUser();
+        var loggedInUser = getLoginUser();
         var wallet = walletRepository.findByUser_EmailAddressIgnoreCase(loggedInUser);
         if(wallet.isPresent()) {
             var walletValue = wallet.get();

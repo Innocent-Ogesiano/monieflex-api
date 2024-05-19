@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -56,24 +57,29 @@ public class FlutterwaveService {
                 phoneNumber, 1, true, txRef
         );
         HttpEntity<FLWVirtualDto> data = new HttpEntity<>(body, getFlutterwaveHeader());
-        var response = rest.postForEntity(FlutterwaveEndpoints.VIRTUAL_ACCOUNT_NUMBER, data, FLWVirtualAccountResponse.class);
+        try {
+            var response = rest.postForEntity(FlutterwaveEndpoints.VIRTUAL_ACCOUNT_NUMBER, data, FLWVirtualAccountResponse.class);
 
-        if(response.getStatusCode().is2xxSuccessful()) {
-            if(Objects.requireNonNull(response.getBody()).getStatus().equalsIgnoreCase("success")) {
-                VirtualAccountResponse accountResponse = response.getBody().getData();
-                if(ObjectUtils.isNotEmpty(accountResponse)) {
-                    Wallet wallet = new Wallet();
-                    wallet.setBalance(BigDecimal.valueOf(0.00));
-                    wallet.setReference(accountResponse.getFlwRef());
-                    wallet.setBankName(accountResponse.getBankName());
-                    wallet.setNumber(accountResponse.getAccountNumber());
-                    return wallet;
+            if(response.getStatusCode().is2xxSuccessful()) {
+                if(Objects.requireNonNull(response.getBody()).getStatus().equalsIgnoreCase("success")) {
+                    VirtualAccountResponse accountResponse = response.getBody().getData();
+                    if(ObjectUtils.isNotEmpty(accountResponse)) {
+                        Wallet wallet = new Wallet();
+                        wallet.setBalance(BigDecimal.valueOf(0.00));
+                        wallet.setReference(accountResponse.getFlwRef());
+                        wallet.setBankName(accountResponse.getBankName());
+                        wallet.setNumber(accountResponse.getAccountNumber());
+                        return wallet;
+                    }
                 }
+                throw new MonieFlexException("Couldn't finish processing data");
+            } else {
+                throw new MonieFlexException("Error in creating wallet");
             }
-            throw new MonieFlexException("Couldn't finish processing data");
-        } else {
-            throw new MonieFlexException("Error in creating wallet");
+        } catch (RestClientException | MonieFlexException e) {
+            throw new MonieFlexException("Error in creating wallet, please try again later");
         }
+
     }
 
     @SneakyThrows

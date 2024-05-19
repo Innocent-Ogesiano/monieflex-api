@@ -59,7 +59,7 @@ public class MonieFlexExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(LockedException.class)
-    public ApiResponse<String> handleLockedException(LockedException exception){
+    public ApiResponse<String> handleLockedException(LockedException ignoredException){
         return new ApiResponse<>(
                 "Email is not verified. Check your email for verification link",
                 HttpStatus.BAD_REQUEST

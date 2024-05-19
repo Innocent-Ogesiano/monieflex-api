@@ -50,24 +50,21 @@ public class AuthImplementation implements AuthService {
 
     @Override
     public ResponseEntity<ApiResponse<LoginResponse>> login(LoginDto loginDto){
-        var user = userRepository.findByEmailAddress(loginDto.emailAddress());
-        if(user.isPresent()) {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDto.emailAddress(), loginDto.password())
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDto.emailAddress(), loginDto.password())
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        var user = userRepository.findByEmailAddress(loginDto.emailAddress())
+                .orElseThrow(()-> new UsernameNotFoundException("User not found"));
 
-            LoginResponse loginResponse = new LoginResponse(
-                    user.get().getFirstName(),
-                    user.get().getLastName(),
-                    user.get().getEmailAddress(),
-                    generateToken(user.get(), null)
-            );
-            ApiResponse<LoginResponse> response = new ApiResponse<>(loginResponse, "Login successful");
-            return new ResponseEntity<>(response, response.getStatus());
-        } else {
-            throw new UsernameNotFoundException("User not found");
-        }
+        LoginResponse loginResponse = new LoginResponse(
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmailAddress(),
+                generateToken(user, null)
+        );
+        ApiResponse<LoginResponse> response = new ApiResponse<>(loginResponse, "Login successful");
+        return new ResponseEntity<>(response, response.getStatus());
     }
 
     @Override

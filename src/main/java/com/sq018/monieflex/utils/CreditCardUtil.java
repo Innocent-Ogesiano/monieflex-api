@@ -40,12 +40,15 @@ public class CreditCardUtil {
         int expYr = Integer.parseInt(expiryYear);
         int currYr = Integer.parseInt(currentYear);
 
-        if(expYr >= currYr) {
+        if(expYr > currYr)
+            return true;
+        else if (expYr == currYr) {
             int expMth = Integer.parseInt(expiryMonth);
             return expMth >= currentMonth;
         }
         return false;
     }
+
     private static boolean isValidCVV(String cardNumber, String cvv) {
         if (cardNumber.startsWith("34") || cardNumber.startsWith("37")) {
             return cvv.length() == 4;
@@ -53,6 +56,7 @@ public class CreditCardUtil {
             return cvv.length() == 3;
         }
     }
+
     private static boolean isValidCardNumber(String cardNumber) {
         if (cardNumber.startsWith("34") || cardNumber.startsWith("37")) {
             if (cardNumber.length() < 15 || cardNumber.length() > 19) {
@@ -63,10 +67,7 @@ public class CreditCardUtil {
                 return false;
             }
         }
-        if (!isLuhnValid(cardNumber)) {
-            return false;
-        }
-        return true;
+        return isLuhnValid(cardNumber);
     }
     private static boolean isLuhnValid(String cardNumber) {
         int[] digits = new int[cardNumber.length()];

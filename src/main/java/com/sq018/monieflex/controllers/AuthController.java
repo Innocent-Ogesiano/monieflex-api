@@ -12,6 +12,7 @@ import com.sq018.monieflex.services.AuthService;
 import com.sq018.monieflex.services.implementations.AuthImplementation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,13 +21,9 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
-
-    @Autowired
-    public AuthController(AuthImplementation authService) {
-        this.authService = authService;
-    }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginDto login) {
